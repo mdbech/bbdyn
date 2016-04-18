@@ -23,6 +23,9 @@ if (LANG.substring(0, 2) === 'en') {
         'csv_username_header': 'Username',
         'csv_groups_header': 'Group',
         'csv_name_header': 'Name',
+        'csv_first_name_header': 'First Name',
+        'csv_last_name_header': 'Last Name',
+        'export_student_list': 'Export student list',
         '': ''
     };
 } else {
@@ -36,6 +39,9 @@ if (LANG.substring(0, 2) === 'en') {
         'csv_username_header': 'Brugernavn',
         'csv_groups_header': 'Gruppe',
         'csv_name_header': 'Navn',
+        'csv_first_name_header': 'Fornavn',
+        'csv_last_name_header': 'Efternavn',
+        'export_student_list': 'Eksporter liste af studerende',
         '': ''
     };
 }
@@ -360,6 +366,52 @@ function add_export_group_list(form, users) {
     form.appendChild(link);
 }
 
+function csv_first_name(user) {
+    return user.first;
+}
+csv_first_name.header = TR.csv_first_name_header;
+function csv_last_name(user) {
+    return user.last;
+}
+csv_last_name.header = TR.csv_last_name_header;
+
+function add_export_student_list(form, users) {
+    function get_column_header(column) {
+        return column.header;
+    }
+    function get_column_value(user) {
+        function f(column) {
+            return column(user);
+        }
+        return f;
+    }
+    
+    var s = [];
+    var columns = [csv_username, csv_first_name, csv_last_name];
+    s.push(columns.map(get_column_header).join(','));
+    for(var i = 0; i < users.length; ++i) {
+        var special_roles = [
+            'Student', 'Studerende'
+        ];
+        if(special_roles.indexOf(users[i].role) === -1) {
+            // Skip these roles, as the grade center doesn't want them
+            continue;
+        }
+        
+        s.push(columns.map(get_column_value(users[i])).join(','));
+    }
+    var url = 'data:text/plain;base64,' + btoa(s.join('\n'));
+    
+    var link = document.createElement('a');
+    link.setAttribute('download', 'students.csv');
+    link.setAttribute('href', url);
+    link.style.display = 'inline-block';
+    link.style.margin = '0px 14px';
+    link.innerHTML = TR.export_student_list;
+    
+    form.appendChild(link);
+}
+
 function parseUserGroupList() {
     var targetPage = '/webapps/bb-group-mgmt-LEARN/execute/groupInventoryList';
     if (location.pathname !== targetPage) {
@@ -391,6 +443,7 @@ function parseUserGroupList() {
 
     var ourSearchForm = make_search_form(textarea, rows, users, groups);
     add_export_group_list(ourSearchForm, users);
+    add_export_student_list(ourSearchForm, users);
     bbSearchForm.parentNode.insertBefore(ourSearchForm, bbSearchForm);
 
     var header = document.getElementById('pageTitleText');
